@@ -13,31 +13,42 @@
 
 namespace SimpleThings\TransactionalBundle\Transactions\Form;
 
-use Symfony\Component\Form\FormValidatorInterface;
-use Symfony\Component\Form\FormInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\Form\FormEvents;
+use Symfony\Component\Form\FormEvent;
 
 /**
  * "Missusing" the FormValidator to set transactions to rollback only when the validation failed.
  *
- * The POST_BIND event should be AFTER validation imho.
- *
  * @author Benjamin Eberlei <kontakt@beberlei.de>
  */
-class RollbackInvalidFormValidator implements FormValidatorInterface
+class RollbackInvalidFormValidator implements EventSubscriberInterface
 {
     private $container;
 
-    public function __construct($container)
+    public function __construct(ContainerInterface $container)
     {
         $this->container = $container;
     }
 
-    public function validate(FormInterface $form)
+    /**
+     * Returns an array of event names this subscriber wants to listen to.
+     *
+     * @return array The event names to listen to
+     */
+    static public function getSubscribedEvents()
+    {
+        return array(FormEvents::POST_BIND => array('validate', -32));
+    }
+
+    public function validate(FormEvent $event)
     {
         if (!$this->container->has('request')) {
             return;
         }
 
+        $form = $event->getForm();
         $request = $this->container->get('request');
         if ( ! $form->isValid() && $request->attributes->has('_transaction') ) {
             $request->attributes->get('_transaction')->setRollBackOnly(true);

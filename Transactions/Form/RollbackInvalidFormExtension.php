@@ -14,20 +14,20 @@
 namespace SimpleThings\TransactionalBundle\Transactions\Form;
 
 use Symfony\Component\Form\AbstractTypeExtension;
-use Symfony\Component\Form\FormBuilder;
+use Symfony\Component\Form\FormBuilderInterface;
 
 class RollbackInvalidFormExtension extends AbstractTypeExtension
 {
-    private $validator;
+    private $listener;
 
-    public function __construct(RollbackInvalidFormValidator $rollbackValidator)
+    public function __construct(RollbackInvalidFormValidator $rollbackListener)
     {
-        $this->validator = $rollbackValidator;
+        $this->listener = $rollbackListener;
     }
 
-    public function buildForm(FormBuilder $builder, array $options)
+    public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $builder->addValidator($this->validator);
+        $builder->addEventSubscriber($this->listener);
     }
 
     public function getExtendedType()
@@ -35,4 +35,3 @@ class RollbackInvalidFormExtension extends AbstractTypeExtension
         return 'form';
     }
 }
-
